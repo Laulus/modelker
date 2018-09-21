@@ -1,7 +1,5 @@
 rm(list=ls())   # Clear memory
 
-
-
 ## WORKING DIRECTORY
 
 work.dir<-paste('G:/ANALYSES DONNEES/Norme_reaction',sep="")
@@ -55,8 +53,8 @@ N=nrow(bdd_norm)
 data<-list(N=N, Y=bdd_norm$Milieu, len=bdd_norm$Fry, age=bdd_norm$X, fish=bdd_norm$Fish, scale=bdd_norm$Scale,river=as.factor(bdd_norm$R), idriver=unique(bdd_norm$R), idfish=unique(bdd_norm$Fish))
 
 
-data$Y=ifelse(data$Y>0,1,0) # poissons TE et TM sont considérés comme migrants
-# data$Y=ifelse(data$Y<=1,1,0) # poissons TE et TS sont considérés comme sédentaires
+data$Y=ifelse(data$Y>0,1,0) # poissons TE et TM sont consid?r?s comme migrants
+# data$Y=ifelse(data$Y<=1,1,0) # poissons TE et TS sont consid?r?s comme s?dentaires
 
 ##-----------------------------MODEL ----------------------------------##
 
@@ -75,9 +73,9 @@ write("
       # Vraisemblance
 
 Y[i] ~ dbern(p[i])      
-# logit(p[i]) <- (beta0[age[i]] + eps.river[river[i]]) + (beta1[age[i]]+betar[river[i]])*(len[i]-mean(len[]))  # MODELE COMPLET : effet rivière / intercept et pente
-# logit(p[i]) <- beta0[age[i]] + (beta1[age[i]]+betar[river[i]])*(len[i]-mean(len[])) # effet rivière pente
- logit(p[i]) <- beta0[age[i]] + beta1[age[i]]*(len[i]-mean(len[])) + eps.river[river[i]] # modele avec effet rivière random sur intercept
+# logit(p[i]) <- (beta0[age[i]] + eps.river[river[i]]) + (beta1[age[i]]+betar[river[i]])*(len[i]-mean(len[]))  # MODELE COMPLET : effet rivi?re / intercept et pente
+# logit(p[i]) <- beta0[age[i]] + (beta1[age[i]]+betar[river[i]])*(len[i]-mean(len[])) # effet rivi?re pente
+ logit(p[i]) <- beta0[age[i]] + beta1[age[i]]*(len[i]-mean(len[])) + eps.river[river[i]] # modele avec effet rivi?re random sur intercept
  # logit(p[i]) <- beta0[age[i]] + beta1[age[i]]*(len[i]-mean(len[])) # modele 0, nor slope nor intercept effect
       
       } # end loop i
@@ -104,7 +102,7 @@ for (j in 1 : max(age[])) {
 #sigma.beta1~dunif(0,100)
 
 
-# # METHODE DES CONTRASTES, on fixe les effets pour la rivière n°1 et on calcule les différences par rapport à cette rivière
+# # METHODE DES CONTRASTES, on fixe les effets pour la rivi?re n?1 et on calcule les diff?rences par rapport ? cette rivi?re
 # eps.river[1]<-0
 # eps.river[2]~ dnorm(0,0.001)
 # eps.river[3]~ dnorm(0,0.001)
@@ -141,7 +139,7 @@ for (j in 1 : max(age[])) {
   # br12<-step(betar[2])
   # br13<-step(betar[3])
 
-# PROBAS DES ECARTS, effets aleatoires par rivière
+# PROBAS DES ECARTS, effets aleatoires par rivi?re
 
   eps.river12<-eps.river[1]-eps.river[2]
   eps.river13<-eps.river[1]-eps.river[3]
@@ -205,7 +203,7 @@ inits<-function(){
   # list(beta0=seq(0,-10, length=max(data$age)) , beta1=rep(0.01, max(data$age))) #, sigma=1)
 # inits "random" method 
    list(beta0=seq(0,-10, length=max(data$age)) , beta1=rep(0.01, max(data$age)), sigma=1) #,sigmar=1) # modele avec beta distribution normale (0, 0.001)
-  #list(mu.beta0=-5, sigma.beta0=1, mu.beta1=0.01, sigma.beta1=0.001, sigma=1 ) # définition des paramètres des distributions normales de beta0 et beta1
+  #list(mu.beta0=-5, sigma.beta0=1, mu.beta1=0.01, sigma.beta1=0.001, sigma=1 ) # d?finition des param?tres des distributions normales de beta0 et beta1
   # list( mu.beta0=-5, sigma.beta0=1 , beta1=rep(0.01, max(data$age)), sigma=1)
 }
 
@@ -266,7 +264,7 @@ fit.mcmc<-coda.samples(jagsfit,variable.names=parameters, n.iter=niter, thin=1)
 
 
 summary(fit.mcmc)
-gelman.diag(fit.mcmc,multivariate=F) # test stat de mélange chaine mcmc, convergence? multivariate psrf <1.1
+gelman.diag(fit.mcmc,multivariate=F) # test stat de m?lange chaine mcmc, convergence? multivariate psrf <1.1
 
 
 library(mcmcplots)
@@ -283,10 +281,10 @@ caterplot(fit.mcmc,c("eps.river"),greek=TRUE, reorder=F)
 #plot(fit.mcmc)
 
 #------------ COEFFICIENTS --------------#
-beta0.med<-summary(fit.mcmc)$quantiles[paste0("beta0[",1:10,"]"),"50%"] # on récupère le vecteur des beta0
-beta1.med<-summary(fit.mcmc)$quantiles[paste0("beta1[",1:10,"]"),"50%"] # on récupère le vecteur des beta1
+beta0.med<-summary(fit.mcmc)$quantiles[paste0("beta0[",1:10,"]"),"50%"] # on r?cup?re le vecteur des beta0
+beta1.med<-summary(fit.mcmc)$quantiles[paste0("beta1[",1:10,"]"),"50%"] # on r?cup?re le vecteur des beta1
 betar<-summary(fit.mcmc)$quantiles[paste0("betar[",1:3,"]"),"50%"]
-eps.river<-summary(fit.mcmc)$quantiles[paste0("eps.river[",1:3,"]"),"50%"] # on récupère le vecteur des eps.river
+eps.river<-summary(fit.mcmc)$quantiles[paste0("eps.river[",1:3,"]"),"50%"] # on r?cup?re le vecteur des eps.river
 
 # deltaeps<-summary(fit.mcmc)$statistics[1:3,1:2]
 #deltaeps<-summary(fit.mcmc)$statistics[40:42,1:2] # faux a modifier
@@ -316,7 +314,7 @@ L<-matrix(0,5,length(beta0.med))
   } # end of loop i
 } #end of loop l
 
-output<-matrix(M,nrow=15,ncol=10,byrow=T) # nrow=5probas * 3 rivières
+output<-matrix(M,nrow=15,ncol=10,byrow=T) # nrow=5probas * 3 rivi?res
 o<-as.data.frame.vector(t(output))
 o<-cbind(rep(0,length(o)),rep(0,length(o)),rep(0,length(o)),o)
 colnames(o)<-c("River","p","Age","Length")
