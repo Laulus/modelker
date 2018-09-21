@@ -11,7 +11,7 @@ rm(list=ls())   # Clear memory
 
 ## WORKING DIRECTORY
 
-work.dir<-paste('C:/Users/laulus.INRA/Desktop/THESE/ANALYSES/modele-complet')
+work.dir<-paste('H:/THESE/ANALYSES/modele-complet/modelker')
 
 setwd(work.dir)
 library(rjags)
@@ -20,16 +20,18 @@ load.module("glm")
 #--------------- DATA --------------#
 library(readr)
 var <- read_delim("vartest.csv",";", escape_double = FALSE, trim_ws = TRUE)
-var<-var[, c("ID","River","Num_ec","Lecteur","Age_C","AgeT")]
+var<-var[, c("ID","Riviere","Num_ec","Lecteur","Age_C","AgeT")]
 
 str(var)
 
 var<-na.omit(var)
 View(var)
 
-N1=nrow(var)/8  # 36 fish in vartest => ok
+N1=nrow(var)/8  # 60 fish in vartest => ok
+n.obs=nrow(var)
 
-data<-list(N=N1, ID=var$ID, Reader=as.factor(var$Lecteur), river=as.factor(var$River), age=var$AgeT, idfish=unique(var$ID),idreader=unique(var$Lecteur), idriver=unique(var$River))
+
+data<-list(N=N1, n.obs=n.obs, ID=var$ID, Reader=as.factor(var$Lecteur), river=as.factor(var$River), n.age=max(var$AgeT), age=var$AgeT, idfish=unique(var$ID),idreader=unique(var$Lecteur), idriver=unique(var$River))
 #______________________________________________________________________#
 
 ##-----------------------------MODEL ----------------------------------##
@@ -41,24 +43,26 @@ write("
       
       ##  Multinomial logit link function         
       for (j in 1:n.obs) { 
-      Age[j] ~dcat(PSI[ID[j], 1:8] )
+      Age[j] ~dcat(PSI[ID[j], 1:n.age] )
       for (k in 1:n.age) { 
       PSI[j,k]  <- psi[j,k] / sum(psi[j,])   # constrain the transition such that their sum < 1 :   
       } # end loop k
-      log(psi[j,9])<-0 #Reference category, set to zero
+      log(psi[j,n.age+1])<-0 #Reference category, set to zero
       for (k in 1 : (n.age+1)) { log(psi[j,k]) <- alpha[k] + eps[j]}    
       eps[j]<-  a[ID[j]]+ b[Reader[j]] +epsres[j]
-      } # end loop j
-      #for (i in 1:n.age) { 
-      #Age.pred[i] ~dcat(PSI.pred[j,1:8] )
-      #PSI.pred[j,k] <- alpha[k] + a[ID[j]]
-      #}
-      for (i in 1:N1)  {
-      log(age[i])~dnorm(log(agetrue[i]),tauage)
-      agetrue[i] <- age[i] * eps[i]
-      eps[i]<-  a[ID[i]]+ b[Reader[i]] +epsres[i] # a is intra fish variance between 0 and 2 (8 scales)
-      # b is inter readre variance between 0 and 2 # epsres variance not explained by intra nor inter
-      }
+      } # end loop k
+
+
+      # #for (i in 1:n.age) { 
+      # #Age.pred[i] ~dcat(PSI.pred[j,1:8] )
+      # #PSI.pred[j,k] <- alpha[k] + a[ID[j]]
+      # #}
+      # for (i in 1:N1)  {
+      # log(age[i])~dnorm(log(agetrue[i]),tauage)
+      # agetrue[i] <- age[i] * eps[i]
+      # eps[i]<-  a[ID[i]]+ b[Reader[i]] +epsres[i] # a is intra fish variance between 0 and 2 (8 scales)
+      # # b is inter readre variance between 0 and 2 # epsres variance not explained by intra nor inter
+      # }
       
       # priors
       for (i in idfish) {
