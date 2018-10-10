@@ -65,20 +65,21 @@ write(" model {
 
   for (i in 1:N)  { #for each lines
     len.retro[i] ~ dnorm(mu[i],tau)
-    mu[i] <- Linf*(1-exp(-k[i]*(agei[i]-t0)))
+    mu[i] <- Linf*(1-exp(-k*(agei[i]-t0)))
     # Linf[i]<- a[river[i]] + c[ID[i]] # effet Linf par riviere et aussi effet random fish sur Linf
     # Linf[i]<- c[ID[i]] # on retire l'effet rivi?re sur Linf
     # k[i]<-b[river[i]] + d[ID[i]]
-    k[i]<-d[ID[i]]
+    # k[i]<-d[ID[i]]
     
   }
 
-# priors
-  for (i in idfish) {
-    # c[i]~dnorm(0,tauki)
-    d[i]~dnorm(0,tauli)       
-  }
+# # priors
+#   for (i in idfish) {
+#     # c[i]~dnorm(0,tauki)
+#     d[i]~dnorm(0,tauli)       
+#   }
 
+k~dnorm(0,0.01)
 Linf~dnorm(1000, 0.001)
 tau~dgamma(0.001,0.001)
 tauki~dgamma(0.001,0.001)
@@ -112,7 +113,7 @@ niter=50000 # Total number of steps in chains to save.
 
 ## PARAMETERS TO SAVE
 parameters=c("a.retro","b.retro","c.retro","tau.tot",      #retrocalcul
-             "Linf","d","tau","tauki","tauli","t0")
+             "Linf","k","tau","tauki","tauli","t0")
 # parameters=c("a.retro","b.retro","tau.tot") 
 
 #______________________________________________________________________#
@@ -122,7 +123,7 @@ parameters=c("a.retro","b.retro","c.retro","tau.tot",      #retrocalcul
 inits<-function(){
   # inits "random" method 
   list(a.retro=100 , b.retro=1 , c.retro=0.1, tau.tot =0.01,
-       Linf=600, t0=-0.2,tau=0.1,tauki=0.3, tauli=0.3) # define inits for a b c and d to reestimate
+       Linf=600, t0=-0.2, k= 1, tau=0.1) #,tauki=0.3, tauli=0.3) # define inits for a b c and d to reestimate
   # list(a.retro=100 , b.retro=0.1 , tau.tot =0.1)
 }
 
