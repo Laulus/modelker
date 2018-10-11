@@ -11,22 +11,31 @@ load.module("glm")
 
 #--------------- DATA --------------#
 library(readr)
-# var <- read_delim("vartest.csv",";", escape_double = FALSE, trim_ws = TRUE)
-# var<-var[, c("ID","Riviere","Num_ec","Lecteur","Age_C","AgeT")]
-# 
-# str(var)
-# 
-# var<-na.omit(var)
-# View(var)
-# 
-# N1=nrow(var)/8  # 60 fish in vartest => ok
-# n.obs=nrow(var)
 
+# getwd()
+# load("base1.RData") # projettut
+# load("base2.RData") # projettut2
 
-# data<-list(N=N1, n.obs=n.obs, ID=var$ID, Reader=as.factor(var$Lecteur), river=as.factor(var$River), n.age=max(var$AgeT), age=var$AgeT, idfish=unique(var$ID),idreader=unique(var$Lecteur), idriver=unique(var$River))
-
-data<-load("dataframetestmodelker.RData")
+data<-load("dataframetestmodelker.RData") 
+# load the base you want to work on, dataframetestmodelker is a test
+# base1 is old measures made by Eddy, Marc and others
+# base 2 are recent readings made with the newest scalimetry methodology
 View(dataframe)
+# View(projettut)
+# View(projettut2)
+
+
+
+# for ( i in 1:length(projettut2$age.mer)){
+#   if (is.na(projettut2$age.mer[i])==TRUE)
+#   projettut2$age.mer[i]<-0
+# }
+# projettut2$age.mer<-as.numeric(projettut2$age.mer)
+
+
+dataframe<-dataframe
+# dataframe<-projettut
+# dataframe<-projettut2
 
 data<-list(N=nrow(dataframe),ID=as.factor(unique(dataframe$ID)),idfish=unique(dataframe$ID), len=unique(dataframe$len),length=dataframe$len, agei=dataframe$agei, radi=dataframe$radi, aget=dataframe$aget, agem=dataframe$agem, pheno=dataframe$pheno, RT=unique(dataframe$RT), rt=dataframe$RT, RM=dataframe$RM, milieu=dataframe$milieu)
 #______________________________________________________________________#
