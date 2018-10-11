@@ -25,7 +25,6 @@ View(dataframe)
 # View(projettut2)
 
 
-
 # for ( i in 1:length(projettut2$age.mer)){
 #   if (is.na(projettut2$age.mer[i])==TRUE)
 #   projettut2$age.mer[i]<-0
@@ -33,33 +32,60 @@ View(dataframe)
 # projettut2$age.mer<-as.numeric(projettut2$age.mer)
 
 
-dataframe<-dataframe
-# dataframe<-projettut
-# dataframe<-projettut2
+# ----AJOUT DE LA COLONNE MILIEU DANS LES BASES 1 et 2 (projettut et projettut2)
 
-data<-list(N=nrow(dataframe),ID=as.factor(unique(dataframe$ID)),idfish=unique(dataframe$ID), len=unique(dataframe$len),length=dataframe$len, agei=dataframe$agei, radi=dataframe$radi, aget=dataframe$aget, agem=dataframe$agem, pheno=dataframe$pheno, RT=unique(dataframe$RT), rt=dataframe$RT, RM=dataframe$RM, milieu=dataframe$milieu)
+# projettut2<-subset(projettut2,!is.na(projettut2$RM)) # pour l'instant je retire les nA dans la colonne RM il faudra corriger
+# projettut2$milieu<-rep(0,nrow(projettut2))
+# for (i in 1:nrow(projettut2)){
+# if ( projettut2$pheno[i]=="TM" && (projettut2$radi[i]>=projettut2$RM[i]) )
+#  projettut2$milieu[i]<-1
+# }
+# 
+# projettut$milieu<-rep(0,nrow(projettut))
+# for (i in 1:nrow(projettut)){
+#   if ( projettut$pheno[i]=="TM" && (projettut$radi[i]>=projettut$RM[i]) )
+#     projettut$milieu[i]<-1
+# }
+
+# projettut2<-subset(projettut2,!is.na(projettut2$lf)) # pour l'instant je retire les nA dans la colonne RM il faudra corriger
+# projettut2<-subset(projettut2,!is.na(projettut2$RT)) 
+# 
+# # dataframe<-dataframe
+# # dataframe<-projettut
+# dataframe<-projettut2
+# colnames(dataframe)[11]<-"aget"
+# colnames(dataframe)[12]<-"len"
+
+# rajouter les différents autres facteurs dans le modèle , ie effet rivière, lecteur, cohorte ...
+
+data<-list(N=nrow(dataframe),ID=as.factor(unique(dataframe$ID)),idfish=unique(dataframe$ID), len=unique(dataframe$len),length=dataframe$len, agei=dataframe$agei, radi=dataframe$radi, aget=dataframe$aget, AGE=unique(dataframe$aget),agem=dataframe$agem, pheno=dataframe$pheno, RT=unique(dataframe$RT), rt=dataframe$RT, RM=dataframe$RM, milieu=dataframe$milieu)
 #______________________________________________________________________#
 
 ##-----------------------------MODEL ----------------------------------##
 
-write(" model {
-  
+write("
+
+data {  for (i in 1:N) { # for each lines
+         len.retro[i] <- a.retro + ((length[i]*RM[i]/rt[i])-a.retro)*((radi[i]/RM[i])^b.retro) # attention a la matrice de depart pour les r[i,j]
+}
+}
+
+model {
+
   # likelihood Backcalculation
    for (i in 1:50){
      len[i]~dnorm(mu.tot[i], tau.tot)
      mu.tot[i]<-a.retro + c.retro* RT[i]^b.retro
-  # len<-a.retro + c.retro* exp(b.retro*log(RT))
-# mu.tot[i]<-a.retro + b.retro*RT[i]
   } # end of loop i
-  
+
   # priors
   a.retro~dnorm(100,0.01) #T(0,)
   b.retro~dnorm(1,0.01)
   c.retro~dnorm(0.1,0.01)
- 
+
   tau.tot~dgamma(0.001,0.001)
 # sigma.tot<-1/tau.tot
-  
+
   #predictions
   # WARNING RM=RT for sedentary individuals !!!!!!!!!!!!!!!!!
 
@@ -67,11 +93,19 @@ write(" model {
 # et ajouter de la variance sur les RT
 # admettons qui augmente avec l'age j
 # on aura donc une len retro i j moyenne et des intervalles de confiance
-  
-  for (i in 1:N) { # for each lines
-        len.retro[i] <- a.retro + ((length[i]*RM[i]/rt[i])-a.retro)*((radi[i]/RM[i])^b.retro) # attention a la matrice de depart pour les r[i,j]
-  }
 
+
+
+  # for (i in 1:N) { # for each lines
+  #       len.retro[i] <- a.retro + ((length[i]*RM[i]/rt[i])-a.retro)*(((radi[i]+eps[aget[i]])/RM[i])^b.retro) # attention a la matrice de depart pour les r[i,j]
+  # }
+
+# for (j in 1:max(aget[])){
+# eps[j]~dnorm(0, 0.001)
+# }
+
+
+# --- GROWTH --- #
   for (i in 1:N)  { #for each lines
     len.retro[i] ~ dnorm(mu[i],tau)
     mu[i] <- Linf*(1-exp(-k*(agei[i]-t0)))
@@ -79,13 +113,13 @@ write(" model {
     # Linf[i]<- c[ID[i]] # on retire l'effet rivi?re sur Linf
     # k[i]<-b[river[i]] + d[ID[i]]
     # k[i]<-d[ID[i]]
-    
+
   }
 
 # # priors
 #   for (i in idfish) {
 #     # c[i]~dnorm(0,tauki)
-#     d[i]~dnorm(0,tauli)       
+#     d[i]~dnorm(0,tauli)
 #   }
 
 k~dnorm(0,0.01)
@@ -121,8 +155,8 @@ niter=50000 # Total number of steps in chains to save.
 
 
 ## PARAMETERS TO SAVE
-parameters=c("a.retro","b.retro","c.retro","tau.tot",      #retrocalcul
-             "Linf","k","tau","tauki","tauli","t0")
+parameters=c("a.retro","b.retro","c.retro","tau.tot","eps" ,      #retrocalcul
+              "Linf","k","tau","tauki","tauli","t0")
 # parameters=c("a.retro","b.retro","tau.tot") 
 
 #______________________________________________________________________#
@@ -131,8 +165,8 @@ parameters=c("a.retro","b.retro","c.retro","tau.tot",      #retrocalcul
 
 inits<-function(){
   # inits "random" method 
-  list(a.retro=100 , b.retro=1 , c.retro=0.1, tau.tot =0.01,
-       Linf=600, t0=-0.2, k= 1, tau=0.1) #,tauki=0.3, tauli=0.3) # define inits for a b c and d to reestimate
+  list(a.retro=100 , b.retro=1 , c.retro=0.1, tau.tot =0.01, eps=seq(0,100, length=max(data$aget)),
+        Linf=600, t0=-0.2, k= 1, tau=0.1) #,tauki=0.3, tauli=0.3) # define inits for a b c and d to reestimate
   # list(a.retro=100 , b.retro=0.1 , tau.tot =0.1)
 }
 
@@ -195,7 +229,7 @@ library(mcmcplots)
 traplot(fit.mcmc,"a.retro")
 traplot(fit.mcmc,"b.retro")
 traplot(fit.mcmc,"c.retro")
-traplot(fit.mcmc, "t0")
-traplot(fit.mcmc, "Linf")
+# traplot(fit.mcmc, "t0")
+# traplot(fit.mcmc, "Linf")
 
 
