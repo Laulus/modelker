@@ -1,4 +1,11 @@
- model {
+ data {
+    for (i in 1:N) { # for each lines
+        len.retro[i] <- a.retro + ((length[i]*RM[i]/rt[i])-a.retro)*((radi[i]/RM[i])^b.retro) # attention a la matrice de depart pour les r[i,j]
+   }
+  }
+
+
+model {
   
   # likelihood Backcalculation
    for (i in 1:50){
@@ -24,12 +31,12 @@
 # admettons qui augmente avec l'age j
 # on aura donc une len retro i j moyenne et des intervalles de confiance
   
-  for (i in 1:N) { # for each lines
-        len.retro[i] <- a.retro + ((length[i]*RM[i]/rt[i])-a.retro)*((radi[i]/RM[i])^b.retro) # attention a la matrice de depart pour les r[i,j]
-  }
+
 
   for (i in 1:N)  { #for each lines
-    len.retro[i] ~ dnorm(mu[i],tau)
+    #len.cut[i] <- cut(len.retro[i]) # bugs
+    #len.cut[i] ~ dnorm(mu[i],tau) # bugs
+    len.retro[i] ~ dnorm(mu[i],tau) # bugs
     mu[i] <- Linf*(1-exp(-k*(agei[i]-t0)))
     # Linf[i]<- a[river[i]] + c[ID[i]] # effet Linf par riviere et aussi effet random fish sur Linf
     # Linf[i]<- c[ID[i]] # on retire l'effet rivi?re sur Linf
