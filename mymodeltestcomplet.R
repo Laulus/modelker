@@ -13,15 +13,16 @@ load.module("glm")
 library(readr)
 
 # getwd()
-# load("base1.RData") # projettut
+data<-load("base1.RData") # projettut
 # load("base2.RData") # projettut2
 
-data<-load("dataframetestmodelker.RData") 
+# data<-load("dataframetestmodelker.RData") 
 # load the base you want to work on, dataframetestmodelker is a test
 # base1 is old measures made by Eddy, Marc and others
 # base 2 are recent readings made with the newest scalimetry methodology
-View(dataframe)
-# View(projettut)
+# View(dataframe)
+View(projettut)
+summary(projettut)
 # View(projettut2)
 
 
@@ -51,40 +52,49 @@ View(dataframe)
 # projettut2<-subset(projettut2,!is.na(projettut2$RT)) 
 # 
 # # dataframe<-dataframe
-# # dataframe<-projettut
+dataframe<-projettut
+len<-rep(0,nlevels(as.factor(dataframe$id)))
+RT<-rep(0,nlevels(as.factor(dataframe$id)))
+
+for (i in 1:nlevels(as.factor(dataframe$id))){
+  len[i]<-unique(dataframe$lf[which(dataframe$id==levels(as.factor(dataframe$id))[i])])
+}
+
+for (i in 1:nlevels(as.factor(dataframe$id))){
+  RT[i]<-unique(dataframe$RT[which(dataframe$id==levels(as.factor(dataframe$id))[i])])
+}
 # dataframe<-projettut2
 # colnames(dataframe)[11]<-"aget"
 # colnames(dataframe)[12]<-"len"
 
 # rajouter les différents autres facteurs dans le modèle , ie effet rivière, lecteur, cohorte ...
 
-data<-list(N=nrow(dataframe),ID=as.factor(unique(dataframe$ID)),idfish=unique(dataframe$ID), len=unique(dataframe$len),length=dataframe$len, agei=dataframe$agei, radi=dataframe$radi, aget=dataframe$aget, AGE=unique(dataframe$aget),agem=dataframe$agem, pheno=dataframe$pheno, RT=unique(dataframe$RT), rt=dataframe$RT, RM=dataframe$RM, milieu=dataframe$milieu)
+data<-list(N=nrow(dataframe),ID=as.factor(unique(dataframe$id)),idfish=unique(dataframe$id), len=len,length=dataframe$lf, agei=dataframe$agei, radi=dataframe$radi, aget=dataframe$age.tot, AGE=unique(dataframe$age.tot), pheno=dataframe$pheno, RT=RT, rt=dataframe$RT, RM=dataframe$RM, milieu=dataframe$milieu)
 #______________________________________________________________________#
 
 ##-----------------------------MODEL ----------------------------------##
 
 write("
 
-data {  for (i in 1:N) { # for each lines
-         len.retro[i] <- a.retro + ((length[i]*RM[i]/rt[i])-a.retro)*((radi[i]/RM[i])^b.retro) # attention a la matrice de depart pour les r[i,j]
-}
-}
 
 model {
 
   # likelihood Backcalculation
-   for (i in 1:50){
+   for (i in 1:length(idfish)){
      len[i]~dnorm(mu.tot[i], tau.tot)
      mu.tot[i]<-a.retro + c.retro* RT[i]^b.retro
   } # end of loop i
 
   # priors
-  a.retro~dnorm(100,0.01) #T(0,)
+  a.retro~dnorm(30,0.01) #T(0,)
   b.retro~dnorm(1,0.01)
-  c.retro~dnorm(0.1,0.01)
+  c.retro~dnorm(3,0.01)
+
+
+# tau.tot <- 1/sqrt(sigma.tot)
+# sigma.tot~dunif(0,10)
 
   tau.tot~dgamma(0.001,0.001)
-# sigma.tot<-1/tau.tot
 
   #predictions
   # WARNING RM=RT for sedentary individuals !!!!!!!!!!!!!!!!!
@@ -96,40 +106,23 @@ model {
 
 
 
-  # for (i in 1:N) { # for each lines
-  #       len.retro[i] <- a.retro + ((length[i]*RM[i]/rt[i])-a.retro)*(((radi[i]+eps[aget[i]])/RM[i])^b.retro) # attention a la matrice de depart pour les r[i,j]
-  # }
+   for (i in 1:N) { # for each lines
+         # len.retro[i] <- a.retro + ((length[i]*RM[i]/rt[i])-a.retro)*(((radi[i]+eps[aget[i]])/RM[i])^b.retro) # attention a la matrice de depart pour les r[i,j]
+len.retro[i]~dnorm(mu.retro[i], tau.retro)
+mu.retro[i]<-a.retro + ((length[i]*RM[i]/rt[i])-a.retro)*(((radi[i])/RM[i])^b.retro) # attention a la matrice de depart pour les r[i,j]  
+   }
+
+# tau.retro <- 1/sqrt(sigma.retro)
+# sigma.retro~dunif(0,10)
+tau.retro~dgamma(0.001,0.001)
 
 # for (j in 1:max(aget[])){
 # eps[j]~dnorm(0, 0.001)
 # }
 
 
-# --- GROWTH --- #
-  for (i in 1:N)  { #for each lines
-    len.retro[i] ~ dnorm(mu[i],tau)
-    mu[i] <- Linf*(1-exp(-k*(agei[i]-t0)))
-    # Linf[i]<- a[river[i]] + c[ID[i]] # effet Linf par riviere et aussi effet random fish sur Linf
-    # Linf[i]<- c[ID[i]] # on retire l'effet rivi?re sur Linf
-    # k[i]<-b[river[i]] + d[ID[i]]
-    # k[i]<-d[ID[i]]
-
-  }
-
-# # priors
-#   for (i in idfish) {
-#     # c[i]~dnorm(0,tauki)
-#     d[i]~dnorm(0,tauli)
-#   }
-
-k~dnorm(0,0.01)
-Linf~dnorm(1000, 0.001)
-tau~dgamma(0.001,0.001)
-tauki~dgamma(0.001,0.001)
-tauli~dgamma(0.001,0.001)
-t0~ dunif(-10,0.5)
-
 } # END OF MODEL
+
   ", "mymodelbackcalculation.R")
 
 
@@ -155,8 +148,9 @@ niter=50000 # Total number of steps in chains to save.
 
 
 ## PARAMETERS TO SAVE
-parameters=c("a.retro","b.retro","c.retro","tau.tot","eps" ,      #retrocalcul
-              "Linf","k","tau","tauki","tauli","t0")
+parameters=c("a.retro","b.retro","c.retro","tau.tot"
+             ,"tau.retro"# "eps" ,      #retrocalcul
+              )
 # parameters=c("a.retro","b.retro","tau.tot") 
 
 #______________________________________________________________________#
@@ -165,9 +159,8 @@ parameters=c("a.retro","b.retro","c.retro","tau.tot","eps" ,      #retrocalcul
 
 inits<-function(){
   # inits "random" method 
-  list(a.retro=100 , b.retro=1 , c.retro=0.1, tau.tot =0.01, eps=seq(0,100, length=max(data$aget)),
-        Linf=600, t0=-0.2, k= 1, tau=0.1) #,tauki=0.3, tauli=0.3) # define inits for a b c and d to reestimate
-  # list(a.retro=100 , b.retro=0.1 , tau.tot =0.1)
+  list(a.retro=30 , b.retro=1 , c.retro=3, tau.tot =1, # eps=seq(0,100, length=max(data$aget)),
+        tau.retro=1) 
 }
 
 #________________________________________________________________________#
