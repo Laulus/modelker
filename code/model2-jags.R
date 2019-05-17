@@ -91,8 +91,8 @@ write("
 
       #b[1]~dnorm(0, 0.01) 
       b[1]~dunif(0, 10) 
-      b[2]~dunif(0, 10) 
-      #b[2] <- b[1] #+ delta[2]
+      #b[2]~dunif(0, 10) 
+      b[2] <- b[1] + delta[2]
       delta[2]~dnorm(0, 0.01) 
       
       tau[1]<-1/(sigma[1]^2)
@@ -206,17 +206,17 @@ for (i in 1:20){
   }
 
 
-smp <- sample(1:niter,1)
-col <- c("steelblue1","royalblue3")
-for (i in 1:20){
-  
-  points(dataToJags$smoltAge[i],dataToJags$bodySize[i,dataToJags$smoltAge[i]],pch=17,col=col[data$])
-  points(dataToJags$age[i],dataToJags$bodySize[i,dataToJags$age[i]],pch=16,col=i)
-  points(1:dataToJags$age[i],summary(size.mcmc)[[2]][paste0("bodySize[",i,",",1:dataToJags$age[i],"]"),"50%"],col=i, type="b")
-  
-  segments(1:dataToJags$age[i],summary(size.mcmc)[[2]][paste0("bodySize[",i,",",1:dataToJags$age[i],"]"),"2.5%"],1:dataToJags$age[i],summary(size.mcmc)[[2]][paste0("bodySize[",i,",",1:dataToJags$age[i],"]"),"97.5%"],col=i)
-  
-}
+# smp <- sample(1:niter,1)
+# col <- c("steelblue1","royalblue3")
+# for (i in 1:20){
+#   
+#   points(dataToJags$smoltAge[i],dataToJags$bodySize[i,dataToJags$smoltAge[i]],pch=17,col=col[data$])
+#   points(dataToJags$age[i],dataToJags$bodySize[i,dataToJags$age[i]],pch=16,col=i)
+#   points(1:dataToJags$age[i],summary(size.mcmc)[[2]][paste0("bodySize[",i,",",1:dataToJags$age[i],"]"),"50%"],col=i, type="b")
+#   
+#   segments(1:dataToJags$age[i],summary(size.mcmc)[[2]][paste0("bodySize[",i,",",1:dataToJags$age[i],"]"),"2.5%"],1:dataToJags$age[i],summary(size.mcmc)[[2]][paste0("bodySize[",i,",",1:dataToJags$age[i],"]"),"97.5%"],col=i)
+#   
+# }
 
 
 
