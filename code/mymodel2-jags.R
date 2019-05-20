@@ -31,6 +31,8 @@
       b[1]~dunif(0, 10) 
       b[2]~dunif(0, 10) 
       #b[2] <- b[1] #+ delta[2]
+      #b[2]~dunif(0, 10) 
+      b[2] <- b[1] + delta[2]
       delta[2]~dnorm(0, 0.01) 
       
       tau[1]<-1/(sigma[1]^2)
