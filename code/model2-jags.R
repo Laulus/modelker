@@ -16,7 +16,7 @@ library(readr)
 
 #data<-read.jagsdata("data/data.txt")
 #data<-read.bugsdata("data/data.txt")
-data<-read.bugsdata("data/data500ssX.txt") # data recent
+data<-read.bugsdata("data/data500-1.txt") # data recent
 #data<-read.bugsdata("data/data500-1.txt") # data all 
 #data<-read.bugsdata("data/data500-2.txt") # data Eddy
 
@@ -31,6 +31,16 @@ last <- apply(data$radius, 1, get.last) #
 #   agefr[i] <- ifelse(last[i]>data$smoltAge[i],data$smoltAge[i], last[i] )
 # }
 
+# 
+# dataToJags <- list(nScale=data$nScale
+#                    ,age=data$age
+#                    ,smoltAge=data$smoltAge
+#                    ,bodySize=data$bodySize
+#                    ,radius=data$radius
+#                    ,fishMaxSize=data$fishMaxSize
+#                    ,scaleMaxSize=data$scaleMaxSize
+#                    ,smolt=data$smolt
+# )
 
 # on retire les individus capturés entre aout et novembre / car dernier annuli non marqué / sosu-estimation âge
 toremove <- which(data$age < data$age.tot)
@@ -154,10 +164,11 @@ fit.mcmc<-coda.samples(jagsfit,variable.names=parameters, n.iter=niter, thin=2)
 # variable.names = c("mu.retro"),
 # n.iter = 1,thin = 1)
 
-size.mcmc<-coda.samples(jagsfit,variable.names=c("bodySize[1:20,1:11]"), n.iter=niter, thin=2)
+# max<-data$maxAge
+size.mcmc<-coda.samples(jagsfit,variable.names=c("bodySize[1:20,1:12]"), n.iter=niter, thin=2)
 
 ## BACKUP
-save(fit.mcmc,file=paste0("results/Results_","model2-jags",".RData"))
+save(fit.mcmc,file=paste0("results/Results_data-1","model2-jags",".RData"))
 
 
 #______________________________________________________________________________#
@@ -187,6 +198,7 @@ plot(mcmc[,"b"],mcmc[,"sigmae"])
 
 mcmc<-as.matrix(size.mcmc)
 #size <- apply(mcmc, 2,quantile, probs=0.5)
+
 
 plot(NULL,xlim=c(0,dim(data$bodySize)[2]),ylim=c(0,1000), xlab="Age",ylab="Body size")
 
