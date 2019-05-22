@@ -6,7 +6,7 @@ rm(list = ls())
 
 # work.dir<-paste('D:/THESE/ANALYSES/modele-complet/modelker')
 
-#work.dir<-paste('C:/Users/laulus/Documents/Mirror/THESE/MODELE-COMPLET/aulus/model-new')
+# work.dir<-paste('C:/Users/laulus/Documents/Mirror/THESE/MODELE-COMPLET/modelker')
 
 #setwd(work.dir)
 library(rjags)
@@ -16,10 +16,10 @@ library(readr)
 
 #data<-read.jagsdata("data/data.txt")
 #data<-read.bugsdata("data/data.txt")
-# data<-read.bugsdata("data/data500ssX.txt") # data recent
-data<-read.bugsdata("data/data500-1.txt") # data all
-#data<-read.bugsdata("data/data500-2.txt") # data Eddy
-
+# data<-read.bugsdata("data/data500ssX.txt") # data recent sample
+# data<-read.bugsdata("data/data500-1.txt") # data all sample
+#data<-read.bugsdata("data/data500-2.txt") # data Eddy sample
+data<-read.bugsdata("data/data-all.txt") # data all (no sampling) # 622 recent fish + 2990 fish
 
 # Compute vector with occasions of first capture
 get.last <- function(x) max(which(!is.na(x)))
@@ -184,7 +184,7 @@ size.mcmc<-coda.samples(jagsfit,variable.names=c("bodySize[1:50,1:12]", "allo[1:
 
 
 ## BACKUP
-save(fit.mcmc,file=paste0("results/Results_","model3-jags",".RData"))
+save(fit.mcmc,file=paste0("results/Results-all_","model3-jags",".RData"))
 
 
 #______________________________________________________________________________#
