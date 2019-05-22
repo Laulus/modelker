@@ -16,8 +16,8 @@ library(readr)
 
 #data<-read.jagsdata("data/data.txt")
 #data<-read.bugsdata("data/data.txt")
-data<-read.bugsdata("data/data500ssX.txt") # data recent
-#data<-read.bugsdata("data/data500-1.txt") # data all 
+# data<-read.bugsdata("data/data500ssX.txt") # data recent
+data<-read.bugsdata("data/data500-1.txt") # data all
 #data<-read.bugsdata("data/data500-2.txt") # data Eddy
 
 
@@ -46,6 +46,17 @@ dataToJags <- list(nScale=data$nScale - length(toremove)
                  ,scaleMaxSize=data$scaleMaxSize[-toremove]
                  ,smolt=data$smolt[-toremove,]
                  )
+
+# TO RUN FOR eddy data ,because toremove is integer(0)
+# dataToJags <- list(nScale=data$nScale
+#                    ,age=data$age
+#                    ,smoltAge=data$smoltAge
+#                    ,bodySize=data$bodySize
+#                    ,radius=data$radius
+#                    ,fishMaxSize=data$fishMaxSize
+#                    ,scaleMaxSize=data$scaleMaxSize
+#                    ,smolt=data$smolt
+# )
 
 # dataToJags <- list(nScale=data$nScale
 #                    ,age=last#agefr #data$age
