@@ -18,7 +18,7 @@ levels(bddmodelo$lecteur) # here you can see the name of the different readers
 # bdd<-bddmodeloo # to change hereafter bddmodeloo + bddmodeloX converted
 bdd<-bddmodelo
 # bdd<-subset(bdd, bdd$rq.lecteur=="")
-bdd<-cbind(bdd[,c("id","annee","mois","RiviÃ¨re","pheno","Sexe","lf","Poid.g","lecteur","ecaille.et","age.tot","age.sed")],bdd[,58:75])
+bdd<-cbind(bdd[,c("id","annee","mois","Rivière","pheno","Sexe","lf","Poid.g","lecteur","ecaille.et","age.tot","age.sed")],bdd[,58:75])
 # View(bdd)
 bdd[,14:27]<-apply(bdd[,14:27],2, as.numeric)
 bdd$mois<-as.numeric(bdd$mois)
@@ -76,6 +76,8 @@ maxAge<-max(bdd$age.tot)
 ID<-bdd$id
 age.tot<-bdd$age.tot 
 # age<-bdd$ageent
+river<-as.numeric(bdd$Rivière)
+an<-bdd$annee
 
 scaleMaxSize<-bdd$RT
 # length(ID)
@@ -127,7 +129,7 @@ for (i in 1:nrow(bdd)){
 
 
 # EXPORT DATA for OPENBUGS
-data<- list ("ID", "age","age.tot", "scaleMaxSize","radius","smoltAge","smolt","fishMaxSize","bodySize","nID","nScale","maxAge")
+data<- list ("ID", "an","river","age","age.tot", "scaleMaxSize","radius","smoltAge","smolt","fishMaxSize","bodySize","nID","nScale","maxAge")
 library(R2OpenBUGS)
 bugs.data(data,dir=getwd(),digits=5,data.file="data-all.txt")
 # bugs.data(data,dir=getwd(),digits=5,data.file=paste("data-",k,".txt"))
