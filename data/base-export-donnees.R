@@ -18,7 +18,7 @@ levels(bddmodelo$lecteur) # here you can see the name of the different readers
 # bdd<-bddmodeloo # to change hereafter bddmodeloo + bddmodeloX converted
 bdd<-bddmodelo
 # bdd<-subset(bdd, bdd$rq.lecteur=="")
-bdd<-cbind(bdd[,c("id","annee","mois","Rivi�re","pheno","Sexe","lf","Poid.g","lecteur","ecaille.et","age.tot","age.sed")],bdd[,58:75])
+bdd<-cbind(bdd[,c("id","annee","mois","Rivière","pheno","Sexe","lf","Poid.g","lecteur","ecaille.et","age.tot","age.sed")],bdd[,58:75])
 # View(bdd)
 bdd[,14:27]<-apply(bdd[,14:27],2, as.numeric)
 bdd$mois<-as.numeric(bdd$mois)
@@ -37,6 +37,8 @@ bdd<-subset(bdd,age.sed!="NA")
 bdd<-subset(bdd,age.sed!=0)
 # probleme il y a des lf manquants
 bdd<-subset(bdd,bdd$lf!="NA")
+
+
 # probl?me il y a des RM manquants
 # bdd<-subset(bdd,RM!="NA")
 # probl?me il y a des RT manquants
@@ -62,6 +64,9 @@ bddi<-bdd # on enregistre la base initiale
 bddi<-cbind(bddi,ageent)
 bddi<-subset(bddi, ageent!="0") # on retire les 0+
 
+#on teste en ne gardant qu'une rivière
+#bdd<-subset(bdd,bdd$Rivière=="Norvégienne")
+
 # SAMPLE OR NOT
 # bdd<-bddi
 # bdd<-bddi[sample(1:nrow(bddi),200,replace=FALSE),] # on fait un sample de 200 lignes au hasard
@@ -76,7 +81,7 @@ maxAge<-max(bdd$age.tot)
 ID<-bdd$id
 age.tot<-bdd$age.tot 
 # age<-bdd$ageent
-river<-as.numeric(bdd$Rivi�re)
+river<-as.numeric(bdd$Rivière)
 an<-bdd$annee
 
 scaleMaxSize<-bdd$RT
@@ -107,9 +112,9 @@ RM<-bdd$RM
 for (i in 1:nrow(bdd)){
   for (j in 1:maxAge){
     if (is.na(RM[i])==TRUE){smolt[i,j]<-0}
-    if (is.na(RM[i])==FALSE & radius[i,j]<RM[i] & is.na(radius[i,j])==FALSE){smolt[i,j]<-0}
-    if (is.na(RM[i])==FALSE & is.na(radius[i,j])==TRUE){smolt[i,j]<-smolt[i,j]}
-    if (is.na(RM[i])==FALSE & radius[i,j]>=RM[i] & is.na(radius[i,j])==FALSE){smolt[i,j]<-1}
+    if (is.na(RM[i])==FALSE && radius[i,j]<RM[i] && is.na(radius[i,j])==FALSE){smolt[i,j]<-0}
+    if (is.na(RM[i])==FALSE && is.na(radius[i,j])==TRUE){smolt[i,j]<-smolt[i,j]}
+    if (is.na(RM[i])==FALSE && radius[i,j]>=RM[i] && is.na(radius[i,j])==FALSE){smolt[i,j]<-1}
   } # end of loop j
 } # end of loop i
 
@@ -127,9 +132,40 @@ for (i in 1:nrow(bdd)){
 } # end of loop i
 
 
+# we have to calculate to which cohort each fish belong
+coh<-c()
+for (i in 1:length(bdd$id)){
+  coh[i]<-bdd$an[i]-bdd$age.tot[i]
+}
+# bdd<-cbind(bdd,coh)
+
+#DEFINITION OF RIVERS and their colonization date (biblio papier Labonne versus cohorte calcul?e)
+# We chose the date at first reproduction observed to concalculate time after colonization here, and consider that individual with a vector post
+# that is negative, correspond to visitors of the system
+# this hypothesis can be changed
+# 19 Ch?teau -- 1962 -> 1962
+# 50 Norv?gienne -- 1968 -> 1964
+# 3 Albatros -- 1968 -> 1967
+# 1 Acoena -- 1983 -> 1993
+# 42 Manchots -- 1990 -> 1983
+# 59 Rohan -- 2000 -> 2005
+# 47 Nord -- 1986 -> 1989
+
+#PORT kIRK 1997 # 
+post<-c()
+for (i in 1 :length(bdd$id)){
+  if (river[i]=="19"){post[i]<-coh[i]-1962}
+  if (river[i]=="50"){post[i]<-coh[i]-1968}
+  if (river[i]=="3"){post[i]<-coh[i]-1968}
+  if (river[i]=="1"){post[i]<-coh[i]-1983}
+  if (river[i]=="42"){post[i]<-coh[i]-1990}
+  if (river[i]=="59"){post[i]<-coh[i]-2000}
+  if (river[i]=="47"){post[i]<-coh[i]-1986}
+}
+# bdd<-cbind(bdd,post)
 
 # EXPORT DATA for OPENBUGS
-data<- list ("ID", "an","river","age","age.tot", "scaleMaxSize","radius","smoltAge","smolt","fishMaxSize","bodySize","nID","nScale","maxAge")
+data<- list ("ID", "an","river","coh","post","age","age.tot", "scaleMaxSize","radius","smoltAge","smolt","fishMaxSize","bodySize","nID","nScale","maxAge")
 library(R2OpenBUGS)
 bugs.data(data,dir=getwd(),digits=5,data.file="data-all.txt")
 # bugs.data(data,dir=getwd(),digits=5,data.file=paste("data-",k,".txt"))
