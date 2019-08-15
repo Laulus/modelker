@@ -99,7 +99,8 @@ dataToJags <- list(nScale=data$nScale - length(toremove)
                    ,m.bodysize = colMeans(bodySize[-toremove,],na.rm=TRUE)
                    ,river = river
                    ,nPOP = max(river)
-                   #,colonizationAge = data$post[-toremove]
+                   ,colAge = data$post[-toremove] +1 # colonization age
+                   , nColAge = max(data$post[-toremove])+1
 )
 #save(dataToJags, file="data/dataToJags-all-norvegienne.Rdata")
 
@@ -145,7 +146,7 @@ write("
       p[i,age] <- invSmolt[i,age-1]*(m[i,age]) + (1-invSmolt[i,age-1]) # edit jlabonne
       # m is what you really want to look at. # edit jlabonne
 
-      logit(m[i,age]) <- alpha[ID[i],river[i]]*age + beta[ID[i],river[i]]*(bodySize[i,age] - m.bodysize[age]) +  gamma[ID[i],river[i]]*age*(bodySize[i,age] - m.bodysize[age])
+      logit(m[i,age]) <- alpha[ID[i],colAge[i],river[i]]*age + beta[ID[i],colAge[i],river[i]]*(bodySize[i,age] - m.bodysize[age]) +  gamma[ID[i],colAge[i],river[i]]*age*(bodySize[i,age] - m.bodysize[age])
       #logit(m[i,age]) <- alpha[ID[i],age,river[i]] + beta[ID[i],age,river[i]]*(bodySize[i,age] - m.bodysize[age]) # hierarchical model
       } # END OF LOOP age
       } # END OF LOOP i
@@ -178,30 +179,46 @@ write("
       # A[m] <- alpha[m] +beta * colonizationAge[m] + gamma.
       # then you only have to check if alpha!=0 and/or beta!=0. 
       
-    for (pop in 1:nPOP){  
+  for (pop in 1:nPOP){ 
+    for (col in 1:nColAge){
       for (id in 1:nID){
       #alpha[id]~dnorm(A,tau[3])
       #beta[id]~dnorm(B,tau[4])
       #gamma[id]~dnorm(C,tau[5])
 
-      alpha[id,pop]~dnorm(A[pop],tau[3])
-      beta[id,pop]~dnorm(B[pop],tau[4])  #T(0,)
-      gamma[id,pop]~dnorm(C[pop],tau[5])
+      alpha[id,col,pop]~dnorm(mu_alpha[col,pop],tau[3])
+      beta[id,col,pop]~dnorm(mu_beta[col,pop],tau[4])  #T(0,)
+      gamma[id,col,pop]~dnorm(mu_gamma[col,pop],tau[5])
       } # end of loop id
       
-      A[pop]~dnorm(muA,tau[6])
-      B[pop]~dnorm(muB,tau[7]) #T(0,)
-      C[pop]~dnorm(muC,tau[8])
+      mu_alpha[col,pop] <- A[pop,1] + A[pop,2]*(col-1)
+      mu_beta[col,pop] <- B[pop,1] + B[pop,2]*(col-1)
+      mu_gamma[col,pop] <- C[pop,1] + C[pop,2]*(col-1)
+    } # end loop col
+    
+          for (k in 1:2){
+      A[pop,k]~dnorm(muA[k],tauA[k])
+      B[pop,k]~dnorm(muB[k],tauB[k]) #T(0,)
+      C[pop,k]~dnorm(muC[k],tauC[k])
+          }
     } # end loop pop
       
       #A~dnorm(0,0.01)
       #B~dnorm(0,0.01) T(0,)
       #C~dnorm(0,0.01)
       
-      # with Cauchy distribution: dt(0, pow(2.5,-2), 1)
-      muA~dt(0, pow(2.5,-2), 1) #dnorm(0,0.01)
-      muB~dt(0, pow(2.5,-2), 1) #dnorm(0,0.01) #T(0,)
-      muC~dt(0, pow(2.5,-2), 1) #dnorm(0,0.01)
+                for (k in 1:2){
+      muA[k]~dnorm(0,0.01)
+      muB[k]~dnorm(0,0.01) #T(0,)
+      muC[k]~dnorm(0,0.01)
+      
+      tauA[k]~dgamma(0.1, 0.1)
+      sigmaA[k] <- sqrt(1/tauA[k])
+      tauB[k]~dgamma(0.1, 0.1)
+      sigmaB[k] <- sqrt(1/tauB[k])
+      tauC[k]~dgamma(0.1, 0.1)
+      sigmaC[k] <- sqrt(1/tauC[k])
+                }
       
       for (k in 3:8){
       tau[k]~dgamma(0.1, 0.1)
@@ -231,7 +248,7 @@ write("
       
       } # END OF MODEL
       
-      ", "code/mymodel5-jags.R")
+      ", "code/mymodel6-jags.R")
 
 
 ## -------------------------- ANALYSIS ------------------------------#
@@ -239,7 +256,7 @@ nchains = 2 # Number of chains to run.
 adaptSteps = 1000 # Number of steps to "tune" the samplers.
 burnInSteps = 10000 # Number of steps to "burn-in" the samplers.
 niter=20000 # Total number of steps in chains to save.
-nthin=20
+nthin=10
 
 ## PARAMETERS TO SAVE
 parameters=c("a"
@@ -248,6 +265,8 @@ parameters=c("a"
              #,"delta"
              , "A", "B", "C"
              , "muA", "muB", "muC"
+             ,"mu_alpha", "mu_beta", "mu_gamma"
+             ,"sigmaA", "sigmaB", "sigmaC"
 )
 
 
@@ -272,8 +291,8 @@ inits<-function(){
 ## Compile & adapt
 # Create, initialize, and adapt the model:
 
-#jagsfit=jags.model(
-#  'code/mymodel5-jags.R',
+# jagsfit=jags.model(
+#  'code/mymodel6-jags.R',
 #  dataToJags,inits,
 #  n.chains = nchains,
 #  n.adapt = adaptSteps)
@@ -305,7 +324,7 @@ inits<-function(){
 fit <- jags(data = dataToJags,
             inits = inits,
             parameters.to.save = parameters,
-            model.file =    'code/mymodel5-jags.R',
+            model.file =    'code/mymodel6-jags.R',
             parallel=TRUE,
             n.chains = nchains,
             n.adapt = adaptSteps,
@@ -318,7 +337,7 @@ fit <- jags(data = dataToJags,
 #fit
 fit.mcmc <- fit$samples
 ## BACKUP
-save(fit.mcmc,file=paste0("results/Results_","model5-jags","data-all",".RData"))
+save(fit.mcmc,file=paste0("results/Results_","model6-jags","data-all",".RData"))
 
 
 #####-------------------RESULTS----------------####
@@ -343,7 +362,7 @@ caterplot(fit.mcmc,"A",reorder = FALSE)
 caterplot(fit.mcmc,"B",reorder = FALSE)
 caterplot(fit.mcmc,"C",reorder = FALSE)
 caterplot(fit.mcmc,c("A", "B", "C"),reorder = FALSE)
-
+caterplot(fit.mcmc,c("muA", "muB", "muC"),reorder = FALSE)
 
 mcmc<-as.matrix(fit.mcmc)
 plot(mcmc[,"A[1]"],mcmc[,"B[1]"])
@@ -486,27 +505,16 @@ m <- invlogit(m)
 
 par(mfrow = c(3,3))
 for ( river in 1:7){
-  last <- apply(dataToJags$bodySize, 1, get.last) #
-  last.age <-last[dataToJags$river==river]
-  lf <- dataToJags$bodySize[dataToJags$river==river,]
-  smolt <- dataToJags$smolt[dataToJags$river==river,]
   z <- m[,,river]
   #z <- t(m[,,river])
-  df <- data.frame(Age=last.age, BodySize=lf, River=river, Smolt=smolt)
+  df <- data.frame(Age=dataToJags$age[dataToJags$river==river], BodySize=dataToJags$bodySize[which(dataToJags$bodySize > 28 & dataToJags$river==river)], River=river, Smolt=dataToJags$smolt[which(dataToJags$bodySize > 28 & dataToJags$river==river)])
   
   cols = (colorRampPalette(c("white","steelblue","tomato"))(10))
   col.smolt=c("#00BFFF", "#3A5FCD")
   contour(
     x=age #nrow(z)
     ,y=bodySize #ncol(z)
-    ,z=z
-    ,ylab="Size (mm)",xlab="Age", main=levels(data$river)[river],col=cols)
-  #points(dataToJags$AGE[dataToJags$river==river],dataToJags$bodySize[which(dataToJags$bodySize > 28 & dataToJags$river==river)], pch=16, col=col.smolt[df$Smolt+1]) #<- New
-  
-  for ( i in 1:dim(lf)[1]){
-  for ( j in 1:dim(lf)[2]){
-  points(j,lf[i,j], pch=16, col=col.smolt[smolt[i,j]+1]) #<- New
-  }
-  }
-  }
+    ,z=z,ylab="Size (mm)",xlab="Age", main=levels(data$river)[river],col=cols)
+  points(dataToJags$age[dataToJags$river==river],dataToJags$bodySize[which(dataToJags$bodySize > 28 & dataToJags$river==river)], pch=16, col=col.smolt[df$Smolt+1]) #<- New
+}
 

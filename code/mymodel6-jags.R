@@ -36,7 +36,7 @@
       p[i,age] <- invSmolt[i,age-1]*(m[i,age]) + (1-invSmolt[i,age-1]) # edit jlabonne
       # m is what you really want to look at. # edit jlabonne
 
-      logit(m[i,age]) <- alpha[ID[i],river[i]]*age + beta[ID[i],river[i]]*(bodySize[i,age] - m.bodysize[age]) +  gamma[ID[i],river[i]]*age*(bodySize[i,age] - m.bodysize[age])
+      logit(m[i,age]) <- alpha[ID[i],colAge[i],river[i]]*age + beta[ID[i],colAge[i],river[i]]*(bodySize[i,age] - m.bodysize[age]) +  gamma[ID[i],colAge[i],river[i]]*age*(bodySize[i,age] - m.bodysize[age])
       #logit(m[i,age]) <- alpha[ID[i],age,river[i]] + beta[ID[i],age,river[i]]*(bodySize[i,age] - m.bodysize[age]) # hierarchical model
       } # END OF LOOP age
       } # END OF LOOP i
@@ -69,30 +69,46 @@
       # A[m] <- alpha[m] +beta * colonizationAge[m] + gamma.
       # then you only have to check if alpha!=0 and/or beta!=0. 
       
-    for (pop in 1:nPOP){  
+  for (pop in 1:nPOP){ 
+    for (col in 1:nColAge){
       for (id in 1:nID){
       #alpha[id]~dnorm(A,tau[3])
       #beta[id]~dnorm(B,tau[4])
       #gamma[id]~dnorm(C,tau[5])
 
-      alpha[id,pop]~dnorm(A[pop],tau[3])
-      beta[id,pop]~dnorm(B[pop],tau[4])  #T(0,)
-      gamma[id,pop]~dnorm(C[pop],tau[5])
+      alpha[id,col,pop]~dnorm(mu_alpha[col,pop],tau[3])
+      beta[id,col,pop]~dnorm(mu_beta[col,pop],tau[4])  #T(0,)
+      gamma[id,col,pop]~dnorm(mu_gamma[col,pop],tau[5])
       } # end of loop id
       
-      A[pop]~dnorm(muA,tau[6])
-      B[pop]~dnorm(muB,tau[7]) #T(0,)
-      C[pop]~dnorm(muC,tau[8])
+      mu_alpha[col,pop] <- A[pop,1] + A[pop,2]*(col-1)
+      mu_beta[col,pop] <- B[pop,1] + B[pop,2]*(col-1)
+      mu_gamma[col,pop] <- C[pop,1] + C[pop,2]*(col-1)
+    } # end loop col
+    
+          for (k in 1:2){
+      A[pop,k]~dnorm(muA[k],tauA[k])
+      B[pop,k]~dnorm(muB[k],tauB[k]) #T(0,)
+      C[pop,k]~dnorm(muC[k],tauC[k])
+          }
     } # end loop pop
       
       #A~dnorm(0,0.01)
       #B~dnorm(0,0.01) T(0,)
       #C~dnorm(0,0.01)
       
-      # with Cauchy distribution: dt(0, pow(2.5,-2), 1)
-      muA~dt(0, pow(2.5,-2), 1) #dnorm(0,0.01)
-      muB~dt(0, pow(2.5,-2), 1) #dnorm(0,0.01) #T(0,)
-      muC~dt(0, pow(2.5,-2), 1) #dnorm(0,0.01)
+                for (k in 1:2){
+      muA[k]~dnorm(0,0.01)
+      muB[k]~dnorm(0,0.01) #T(0,)
+      muC[k]~dnorm(0,0.01)
+      
+      tauA[k]~dgamma(0.1, 0.1)
+      sigmaA[k] <- sqrt(1/tauA[k])
+      tauB[k]~dgamma(0.1, 0.1)
+      sigmaB[k] <- sqrt(1/tauB[k])
+      tauC[k]~dgamma(0.1, 0.1)
+      sigmaC[k] <- sqrt(1/tauC[k])
+                }
       
       for (k in 3:8){
       tau[k]~dgamma(0.1, 0.1)
