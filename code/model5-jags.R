@@ -204,7 +204,7 @@ write("
       
       } # END OF MODEL
       
-      ", "code/mymodel4-jags.R")
+      ", "code/mymodel5-jags.R")
 
 #____________________________________________________________________#
 
@@ -243,7 +243,7 @@ inits<-function(){
 # Create, initialize, and adapt the model:
 
 jagsfit=jags.model(
-  'code/mymodel4-jags.R',
+  'code/mymodel5-jags.R',
   dataToJags,inits,
   n.chains=nChains,
   n.adapt = adaptSteps)
@@ -265,7 +265,7 @@ size.mcmc<-coda.samples(jagsfit,variable.names=c("bodySize[1:50,1:12]", "allo[1:
 
 
 ## BACKUP
-save(fit.mcmc,file=paste0("results/Results_","model4-jags","data-ssX",".RData"))
+save(fit.mcmc,file=paste0("results/Results_","model5-jags","data-ssX",".RData"))
 
 
 #______________________________________________________________________________#
