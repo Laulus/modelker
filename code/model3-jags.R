@@ -6,20 +6,27 @@ rm(list = ls())
 
 # work.dir<-paste('D:/THESE/ANALYSES/modele-complet/modelker')
 
-# work.dir<-paste('C:/Users/laulus/Documents/Mirror/THESE/MODELE-COMPLET/modelker')
+work.dir<-paste('C:/Users/laulus/Documents/Mirror/THESE/MODELE-COMPLET/modelker')
 
 #setwd(work.dir)
 library(rjags)
 
 #--------------- DATA --------------#
 library(readr)
-
+setwd(dir = "C:/Users/laulus/Documents/Mirror/THESE/MODELE-COMPLET/modelker/data")
 #data<-read.jagsdata("data/data.txt")
 #data<-read.bugsdata("data/data.txt")
 # data<-read.bugsdata("data/data500ssX.txt") # data recent sample
-# data<-read.bugsdata("data/data500-1.txt") # data all sample
+data<-read.bugsdata("data500-1.txt") # data all sample
 #data<-read.bugsdata("data/data500-2.txt") # data Eddy sample
-data<-read.bugsdata("data/data-all.txt") # data all (no sampling) # 622 recent fish + 2990 fish
+# data<-read.bugsdata("data-all.txt") # data all (no sampling) # 622 recent fish + 2990 fish
+
+for (i in 1:length(data$age)){
+  for (j in 1:12){
+  if (j <=data$age[i]){data$smolt[i,j]<-data$smolt[i,j]}
+  else {data$smolt[i,j]<-NA}
+  }}
+
 
 # Compute vector with occasions of first capture
 get.last <- function(x) max(which(!is.na(x)))

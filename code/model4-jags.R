@@ -4,9 +4,9 @@
 rm(list = ls())
 ## WORKING DIRECTORY
 
-# work.dir<-paste('D:/THESE/ANALYSES/modele-complet/modelker')
 
-#work.dir<-paste('C:/Users/laulus/Documents/Mirror/THESE/MODELE-COMPLET/aulus/model-new')
+work.dir<-paste('C:/Users/laulus/Documents/Mirror/THESE/MODELE-COMPLET/modelker')
+setwd(work.dir)
 
 #setwd(work.dir)
 library(rjags)
@@ -16,15 +16,18 @@ load.module('glm')
 library(readr)
 
 #data<-read.jagsdata("data/data.txt")
-#data<-read.bugsdata("data/data.txt")
-data<-read.bugsdata("data/data500ssX.txt") # data recent
+# data<-read.bugsdata("data/data-all.txt")
+# data<-read.bugsdata("data/data500ssX.txt") # data recent
 #data<-read.bugsdata("data/data500-1.txt") # data all 
 #data<-read.bugsdata("data/data500-2.txt") # data Eddy
+data<-read.bugsdata("data/data-all-norvegienne.txt") # 1297 poissons
 
+
+# redefinition of the state of each individual
 for (i in 1:length(data$age)){
   for (j in 1:max(data$age)){ #maxAge
     if (j <=data$age[i]){data$smolt[i,j]<-data$smolt[i,j]}
-    else {data$smolt[i,j]<-NA}
+    else {data$smolt[i,j]<-NA} # we don't know the future state of the individual once it has been captured
   }}
 
 # Compute vector with occasions of first capture
@@ -45,11 +48,14 @@ smolt <- cbind(rep(0,data$nScale),data$smolt)
 # on retire les individus capturés entre aout et novembre / car dernier annuli non marqué / sosu-estimation âge
 toremove <- which(data$age < data$age.tot)
 
-ID = data$ID[-toremove]
+a = data$ID[-toremove]
 ID = match(a, unique(sort(a)))
 # ID<-factor(ID)
 # levels(ID)<-1:data$nID
 # ID <- as.numeric(ID)
+
+
+
 
 dataToJags <- list(nScale=data$nScale - length(toremove)
                    , ID = ID
@@ -64,7 +70,7 @@ dataToJags <- list(nScale=data$nScale - length(toremove)
                    , invSmolt = 1-smolt[-toremove,]
                    ,m.bodysize = colMeans(bodySize[-toremove,],na.rm=TRUE)
 )
-save(dataToJags, file="data/dataToJags.Rdata")
+save(dataToJags, file="data/dataToJags-all-norvegienne.Rdata")
 
 # dataToJags <- list(nScale=data$nScale
 #                    ,age=last#agefr #data$age
@@ -91,9 +97,8 @@ write("
       #Y[i,j]<- ifelse(age[i]>smoltAge[i],2,1) # 2: at sea / 1: in freshwater
       
       for (j in 1:age[i]) { # maxAge of each scale
-      
-      Y[i,j]<- ifelse(j>smoltAge[i],2,1) # 2: at sea / 1: in freshwater
-      
+       Y[i,j]<- ifelse(j>smoltAge[i],2,1) # 2: at sea / 1: in freshwater
+       # Y[i,j]<- ifelse(j+1>smoltAge[i],2,1) # 2: at sea / 1: in freshwater
       
       ### LIKELIHOOD
       ## 1. Back-Calculation models
@@ -107,20 +112,20 @@ write("
       } # END OF LOOP j
       
       ## 2, Reaction norm
-      
+
       # Age 1
       smolt[i,1]~dbern(p[i,1])	# edit jlabonne
       p[i,1] <- m[i,1]
       logit(m[i,1]) <- alpha[ID[i]]*1 + beta[ID[i]]*(bodySize[i,1] - m.bodysize[1]) +  gamma[ID[i]]*1*(bodySize[i,1] - m.bodysize[1])
-      
+
       for (j in 2:age[i]) { # maxAge of each scale
-      
+
       smolt[i,j]~dbern(p[i,j])	# edit jlabonne
       ##invSmolt[i,j-1]~ dbern(q)  # for now, we assume it is stochastic # edit jlabonne
       ## if state is already smolt, then p= 1. # edit jlabonne
       p[i,j] <- invSmolt[i,j-1]*(m[i,j]) + (1-invSmolt[i,j-1]) # edit jlabonne
       # m is what you really want to look at. # edit jlabonne
-      
+
       logit(m[i,j]) <- alpha[ID[i]]*j + beta[ID[i]]*(bodySize[i,j] - m.bodysize[j]) +  gamma[ID[i]]*j*(bodySize[i,j] - m.bodysize[j])
       #logit(m[i,j]) <- alpha[ID[i],j] + beta[ID[i],j]*(bodySize[i,j] - m.bodysize[j]) # hierarchical model
       } # END OF LOOP j
@@ -128,8 +133,10 @@ write("
       
       ### PRIORS
       a[1]~dunif(0, 100) # length of the fish at the time of scale formation
-      a[2] <- a[1] + delta[1]
-      delta[1]~dnorm(0, 0.01) # difference between a[1] and a[2]
+      # a[2] <- a[1] + delta[1]
+      a[2]<-0 # at that step isometry between scale and size of fish should be reached
+      # delta[1]~dnorm(0, 0.01) # difference between a[1] and a[2]
+      # delta[1]<-0
       
       #b[1]~dunif(0.1, 10) 
       #b[2] <- b[1] + delta[2]
@@ -137,7 +144,7 @@ write("
       
       tau[1]<-1/(sigma[1]^2)
       sigma[1]~dunif(0,100)
-      
+
       tau[2]<-1/(sigma[2]^2)
       sigma[2]~dunif(0,100)
     
@@ -160,7 +167,7 @@ write("
       #alpha[id,j]~dnorm(A[j],tau[3])
       #beta[id,j]~dnorm(B[j],tau[4])
       #gamma[id,j]~dnorm(C[j],tau[5])
-      }
+      } # end of loop id
       
       #	taua~dgamma(0.001, 0.001) #a bit informative, else it runs like shit. 
       #	taub~dgamma(0.001, 0.001)
@@ -169,12 +176,12 @@ write("
       for (k in 3:5){
       tau[k]<-1/(sigma[k]^2)
       sigma[k]~dunif(0,10)
-      }
+      } # end of loop k
       
       
-      A~dnorm(0,0.01) #T(-3,3)
-      B~dnorm(0,0.01) #T(-3,3)
-      C~dnorm(0,0.01)	#T(-3,3)
+      A~dnorm(0,0.01) #T(-10,0)
+      B~dnorm(0,0.01) #T(-1,1)
+      C~dnorm(0,0.01)	T(-1,1)
       
       
       # Assess model fit using a sum-of-squares-type discrepancy
@@ -187,7 +194,7 @@ write("
       y.pred[i]~dnorm(allo[i,age[i]], tau[Y[i,age[i]]])        # One new data set at each MCMC iteration
       #sq.pred[i] <- pow(y.pred[i] - allo[i,age[i]], 2)  # Squared residuals for new data
       #p.pred[i] <- step(bodySize[i] - y.pred[i]) 
-      }
+      } # end of loop nscale
       
       #fit <- sum(sq[])              # Sum of squared residuals for actual data set
       #fit.new <- sum(sq.pred[])      # Sum of squared residuals for new data set
@@ -208,7 +215,7 @@ require(rjags)
 nChains = 2 # Number of chains to run.
 adaptSteps = 1000 # Number of steps to "tune" the samplers.
 burnInSteps = 5000 # Number of steps to "burn-in" the samplers.
-niter=10000 # Total number of steps in chains to save.
+niter=30000 # Total number of steps in chains to save.
 
 
 ## PARAMETERS TO SAVE
@@ -222,8 +229,10 @@ inits<-function(){
   list(sigma=c(10,10,.1,.1,.1)
        , a=c(30,NA)
        , b=c(1.01,NA)
-       ,delta=0#c(0,0)
-       #, A = -3, B = 0.4, C = 0
+       # ,delta=0#c(0,0)
+       # , A = -4
+       # , B = 0.1
+       # ,C = 0.05
   )}
 
 
@@ -246,7 +255,7 @@ update(jagsfit, n.iter=burnInSteps,progress.bar="text")
 
 # The saved MCMC chain:
 cat( "Sampling final MCMC chain.\n" )
-fit.mcmc<-coda.samples(jagsfit,variable.names=parameters, n.iter=niter, thin=2)
+fit.mcmc<-coda.samples(jagsfit,variable.names=parameters, n.iter=niter, thin=5)
 # To save individuals len:
 # len.mcmc <- coda.samples(jagsfit,
 # variable.names = c("mu.retro"),
@@ -256,7 +265,7 @@ size.mcmc<-coda.samples(jagsfit,variable.names=c("bodySize[1:50,1:12]", "allo[1:
 
 
 ## BACKUP
-save(fit.mcmc,file=paste0("results/Results_","model4-jags",".RData"))
+save(fit.mcmc,file=paste0("results/Results_","model4-jags","data-ssX",".RData"))
 
 
 #______________________________________________________________________________#
@@ -268,7 +277,7 @@ save(fit.mcmc,file=paste0("results/Results_","model4-jags",".RData"))
 # 
 # 
 library(mcmcplots)
-# traplot(fit.mcmc,"a")
+traplot(fit.mcmc,"A")
 # traplot(fit.mcmc,"b")
 # traplot(fit.mcmc,"sigmae")
 
